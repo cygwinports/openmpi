@@ -1,0 +1,62 @@
+NAME="openmpi"
+VERSION=1.6.3
+RELEASE=4
+CATEGORY="Libs"
+SUMMARY="Open Message Passing Interface API"
+DESCRIPTION="MPI stands for the Message Passing Interface, a standardized API
+typically used for parallel and/or distributed computing. Open MPI is an open
+source, freely available, high performance implementation of the MPI spec."
+HOMEPAGE="http://www.open-mpi.org"
+SRC_URI="http://www.open-mpi.org/software/ompi/v1.6/downloads/${P}.tar.bz2"
+
+PATCH_URI="path_null.patch
+	   SHM.patch
+	   cygwin-dlname.patch"
+
+PKG_NAMES="${PN} ${PN}-common libmpi1 libmpicxx1 libmpif77_1 libmpif90_3 libmpi-devel"
+openmpi_CONTENTS="usr/bin/cygopen* usr/bin/[mo]* usr/lib/openmpi/
+                  usr/share/doc/ usr/share/man/man[17]/"
+openmpi_common_CONTENTS="etc/ usr/share/openmpi/"
+libmpi1_SUMMARY="${SUMMARY} (C runtime)"
+libmpi1_REQUIRES="openmpi-common"
+libmpi1_CONTENTS="usr/bin/cygmpi-1.dll"
+libmpicxx1_SUMMARY="${SUMMARY} (C++ runtime)"
+libmpicxx1_CONTENTS="usr/bin/cygmpi_cxx-1.dll"
+libmpif77_1_SUMMARY="${SUMMARY} (Fortran 77 runtime)"
+libmpif77_1_CONTENTS="usr/bin/cygmpi_f77-1.dll"
+libmpif90_3_SUMMARY="${SUMMARY} (Fortran 90 runtime)"
+libmpif90_3_CONTENTS="usr/bin/cygmpi_f90-3.dll"
+libmpi_devel_SUMMARY="${SUMMARY} (development)"
+libmpi_devel_CONTENTS="usr/include/ usr/lib/libmpi* usr/lib/mpi.mod
+                       usr/lib/pkgconfig/ompi* usr/share/man/man3/"
+# opal, orte libraries for internal use only, headers not installed by default
+PKG_IGNORE="usr/lib/libopen* usr/lib/pkgconfig/orte.pc"
+
+DIFF_EXCLUDES="configure *.in *.guess *.sub *sh *m4 *libltdl* compile depcomp"
+
+src_compile() {
+        cd ${S}
+	./autogen.sh
+        cd ${B}
+	cygconf \
+                LDFLAGS="-Wl,--export-all-symbols -no-undefined"  \
+                --disable-mca-dso \
+		--disable-sysv-shmem \
+                --without-udapl \
+		--enable-cxx-exceptions \
+                --with-threads=posix \
+                --without-cs-fs \
+		--enable-heterogeneous \
+                --with-mpi-param_check=always \
+		--enable-contrib-no-build=vt,libompitrace \
+		--enable-mca-no-build=paffinity,installdirs-windows,timer-windows,shmem-sysv
+
+        cygmake
+}
+
+src_test() {
+        cd ${B}
+        make check
+}
+
+KEEP_LA_FILES="none"
